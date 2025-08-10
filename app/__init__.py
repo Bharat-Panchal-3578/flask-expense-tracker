@@ -1,4 +1,7 @@
-from flask import Flask, render_template
+from flask import Flask
+from app.main import main
+from app.api import api_bp
+from app.auth import auth
 from app.extensions import db,jwt, migrate
 
 def create_app(config_class="config.Config"):
@@ -9,8 +12,8 @@ def create_app(config_class="config.Config"):
     jwt.init_app(app)
     migrate.init_app(app,db)
 
-    @app.route('/')
-    def home():
-        return render_template("index.html")
+    app.register_blueprint(main)
+    app.register_blueprint(api_bp,url_prefix="/api")
+    app.register_blueprint(auth)
     
     return app
