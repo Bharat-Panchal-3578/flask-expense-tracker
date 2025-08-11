@@ -1,5 +1,6 @@
 from flask import request
 from flask_restful import Resource
+from flask_jwt_extended import create_access_token
 from app.extensions import db
 from app.models import User
 from app.utils import success_response, error_response
@@ -28,3 +29,25 @@ class RegisterResource(Resource):
         db.session.commit()
 
         return success_response(data=user.to_dict(),message="Registration Successful!",status=201)
+
+class LoginResource(Resource):
+    def post(self):
+        data = request.get_json()
+
+        username = (data.get("username") or "").strip()
+        email = (data.get("email") or "").strip().lower()
+        password = (data.get("password" or ""))
+
+        user = User.query.filter((username == username) | (email == email)).first()
+        if not username or not email or not password:
+            return  error_response("Email and password are required",400)
+        
+        if not user:
+            return error_response("Invalid credentials",401)
+        
+        token = create_access_token(identity=user.id)
+
+        return success_response({
+            "access_token":token,
+            "user": user.to_dict()
+        }, "Login Successful!")
