@@ -11,18 +11,20 @@ document.getElementById("LoginForm").addEventListener("submit", async (e) => {
             headers: {
                 "Content-Type":"application/json"
             },
+            credentials: "include",
             body: JSON.stringify({username,email,password})
         });
 
         const result = await response.json();
 
         if (response.ok) {
-            localStorage.setItem("access_token",result.data.access_token);
+            window.accessToken = result.data.access_token;
+            localStorage.setItem("is_logged_in","true");
             showFlash(result.message,"success");
 
             setTimeout(() => {
                 window.location.href = '/';
-            }, 1500);
+            }, 100);
 
         } else {
             showFlash(result.message, "danger");
