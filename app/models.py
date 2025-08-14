@@ -1,6 +1,7 @@
 from app.extensions import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date
+from decimal import Decimal
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -25,4 +26,27 @@ class User(db.Model):
             'username':self.username,
             'email':self.email,
             'created_at':self.created_at.isoformat() if self.created_at else None
+        }
+
+class Expense(db.Model):
+    __tablename__ = 'expenses'
+
+    id = db.Column(db.Integer,primary_key=True)
+    user_id = db.Column(db.Integer,db.ForeignKey("users.id"),nullable=False,index=True)
+    amount = db.Column(db.Numeric(12,2),nullable=False)
+    category = db.Column(db.String(50),nullable=False)
+    date = db.Column(db.Date,default=date.today)
+    description = db.Column(db.Text,nullable=True)
+    budget_id = db.Column(db.Integer,nullable=True)
+
+    user = db.relationship("User",backref=db.backref("expenses",lazy="dynamic"))
+
+    def to_dict(self):
+        return {
+            "id":self.id,
+            "amount":float(self.amount) if self.amount is not None else None,
+            "category":self.category,
+            "date":self.date.isoformat() if self.date else None,
+            "description": self.description,
+            "budget_id": self.budget_id
         }
