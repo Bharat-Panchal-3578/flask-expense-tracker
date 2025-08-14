@@ -25,6 +25,7 @@ document.getElementById("LoginForm").addEventListener("submit", async (e) => {
             setTimeout(() => {
                 window.location.href = '/';
             }, 100);
+            console.log(window.accessToken);
 
         } else {
             showFlash(result.message, "danger");
