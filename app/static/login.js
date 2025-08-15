@@ -18,14 +18,13 @@ document.getElementById("LoginForm").addEventListener("submit", async (e) => {
         const result = await response.json();
 
         if (response.ok) {
-            window.accessToken = result.data.access_token;
+            localStorage.setItem("access_token",result.data.access_token);
             localStorage.setItem("is_logged_in","true");
             showFlash(result.message,"success");
 
             setTimeout(() => {
                 window.location.href = '/';
             }, 100);
-            console.log(window.accessToken);
 
         } else {
             showFlash(result.message, "danger");

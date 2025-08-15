@@ -27,12 +27,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ---- auth helpers
   function markLoggedIn(accessToken) {
-    window.accessToken = accessToken || null;
+    localStorage.setItem("access_token",accessToken);
     localStorage.setItem("is_logged_in", "true");
   }
 
   function clearLoginState() {
-    window.accessToken = null;
+    localStorage.removeItem("access_token");
     localStorage.removeItem("is_logged_in");
   }
 

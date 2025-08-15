@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Dashboard</h2>
+
+    <div id="flashMessage"></div>
+    
+    <!-- Add Expense Button -->
+    <button id="addExpenseBtn" class="btn btn-primary mb-3">Add Expense</button>
+
+    <!-- Summary Section -->
+    <div id="summary" class="mb-4">
+        <p>Total Expenses: <span id="totalExpenses">0</span></p>
+        <p>Recent Transactions:</p>
+        <ul id="recentTransactions"></ul>
+    </div>
+
+    <!-- Expenses Table -->
+    <table class="table table-striped" id="expensesTable">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- JS will populate this -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Optional: Add Expense Modal (can be enhanced later) -->
+<div id="addExpenseModal" class="modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="addExpenseForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Add Expense</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="date" name="date" class="form-control mb-2" required>
+          <input type="text" name="category" class="form-control mb-2" placeholder="Category" required>
+          <input type="text" name="description" class="form-control mb-2" placeholder="Description">
+          <input type="number" name="amount" class="form-control mb-2" placeholder="Amount" required>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Add</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+    <script src="{{ url_for('static',filename='dashboard.js') }}"></script>
+{% endblock %}

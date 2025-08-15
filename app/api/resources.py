@@ -48,6 +48,9 @@ class LoginResource(Resource):
         if not user:
             return error_response("Invalid credentials",401)
         
+        if not user.check_password(password):
+            return error_response("Invalid password, try again",401)
+        
         access_token = create_access_token(identity=str(user.id), expires_delta=timedelta(minutes=15))
         refresh_token = create_refresh_token(identity=str(user.id),expires_delta=timedelta(days=7))
 
@@ -142,7 +145,7 @@ class ExpenseListResource(Resource):
         db.session.add(expense)
         db.session.commit()
 
-        return success_response(data=expense.to_dict(),message="Expense created",status=201)
+        return success_response(data=expense.to_dict(),message="Expense created successfully!",status=201)
     
     @jwt_required()
     def put(self, expense_id):

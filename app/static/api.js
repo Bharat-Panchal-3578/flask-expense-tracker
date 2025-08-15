@@ -2,8 +2,8 @@ async function apiFetch(url,options= {}) {
     options.credentials = "include";
 
     if (!options.headers) options.headers = {};
-    if (window.accessToken) {
-        options.headers['Authorization'] = `Bearer ${window.accessToken}`;
+    if (localStorage.getItem("access_token")) {
+        options.headers['Authorization'] = `Bearer ${localStorage.getItem("access_token")}`;
     }
 
     let response = await fetch(url,options);
@@ -12,7 +12,7 @@ async function apiFetch(url,options= {}) {
         const refreshed = await refreshAccessToken();
 
         if (refreshed) {
-            options.headers['Authorization'] = `Bearer ${window.accessToken}`;
+            options.headers['Authorization'] = `Bearer ${localStorage.getItem("access_token")}`;
             response = await fetch(url,options);
         }
     }
@@ -28,7 +28,7 @@ async function refreshAccessToken() {
 
     if (response.ok) {
         const data = await response.json();
-        window.accessToken = data.data.access_token;
+        localStorage.setItem(data.data.access_token);
         return true;
     }
 
