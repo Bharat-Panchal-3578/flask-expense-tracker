@@ -1,7 +1,7 @@
 from app.extensions import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date
-from decimal import Decimal
+from sqlalchemy import func
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -37,7 +37,7 @@ class Expense(db.Model):
     category = db.Column(db.String(50),nullable=False)
     date = db.Column(db.Date,default=date.today)
     description = db.Column(db.Text,nullable=True)
-    budget_id = db.Column(db.Integer,nullable=True)
+    budget_id = db.Column(db.Integer,db.ForeignKey("budgets.id",ondelete="SET NULL"),nullable=True)
 
     user = db.relationship("User",backref=db.backref("expenses",lazy="dynamic"))
 
@@ -50,3 +50,34 @@ class Expense(db.Model):
             "description": self.description,
             "budget_id": self.budget_id
         }
+
+class Budget(db.Model):
+    __tablename__ = "budgets"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer,db.ForeignKey("users.id"),nullable=False,index=True)
+    name = db.Column(db.String(120),nullable=False)
+    period_type = db.Column(db.Enum('weekly','monthly','yearly','custom',name='period_type_enum'),nullable=False)
+    start_date = db.Column(db.Date,nullable=False)
+    end_date = db.Column(db.Date,nullable=False)
+    created_at = db.Column(db.DateTime, server_default=func.now())
+    updated_at = db.Column(db.DateTime,server_default=func.now(),onupdate=func.now())
+
+    categories = db.relationship("BudgetCategory",back_populates="budget",cascade="all,delete-orphan",lazy="dynamic")
+    user = db.relationship("User",backref=db.backref("budgets",lazy="dynamic"))
+
+    def total_limit(self):
+        return sum([float(c.limit for c in self.categories.all())])
+
+class BudgetCategory(db.Model):
+    __tablename__ = "budget_categories"
+    id = db.Column(db.Integer,primary_key=True)
+    budget_id = db.Column(db.Integer,db.ForeignKey("budgets.id",ondelete="CASCADE"),nullable=False,index=True)
+    category = db.Column(db.String(120),nullable=False)
+    limit = db.Column(db.Numeric(12,2),nullable=False,default=0)
+
+    budget = db.relationship("Budget",back_populates="categories")
+
+    __table_args__ = (
+        db.UniqueConstraint('budget_id','category',name='uq_budget_category_name'),
+    )
