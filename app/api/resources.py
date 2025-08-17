@@ -3,6 +3,7 @@ from flask_restful import Resource
 from flask_jwt_extended import create_access_token, create_refresh_token, set_refresh_cookies, jwt_required, get_jwt_identity, unset_jwt_cookies
 from app.extensions import db
 from .utils import _parse_amount, _parse_args, _parse_date
+from .budget_utils import compute_budget_totals, compute_per_category
 from sqlalchemy import or_, update
 from sqlalchemy.exc import SQLAlchemyError
 from app.models import User, Expense, Budget, BudgetCategory
@@ -237,10 +238,52 @@ class ExpenseListResource(Resource):
 class BudgetListResource(Resource):
     @jwt_required()
     def get(self):
-        user_id = int(get_jwt_identity())
-        
+        identity = get_jwt_identity()
+        try:
+            user_id = int(identity)
+        except Exception:
+            return error_response("Invalid token identity", 401)
+
         budgets = Budget.query.filter_by(user_id=user_id).all()
-        return success_response([budget.to_dict() for budget in budgets],"Budgets fetched successfully")
+        budgets_response = []
+
+        for budget in budgets:
+            budget_dict = budget.to_dict()
+
+            overall = compute_budget_totals(budget)
+            per_cat = compute_per_category(budget)
+
+            budget_dict.update({
+                "summary": {
+                    "total_limit": float(overall["total_limit"]),
+                    "total_spent": float(overall["total_spent"]),
+                    "remaining": float(overall["remaining"]),
+                    "percent_used": float(overall["percent_used"]),
+                    "status": overall["status"]
+                },
+                "per_category": [
+                    {
+                        "category": c["category"],
+                        "planned": float(c["planned"]),
+                        "spent": float(c["spent"]),
+                        "remaining": float(c["remaining"]),
+                        "percent_used": float(c["percent_used"]),
+                        "status": c["status"]
+                    } for c in per_cat["categories"]
+                ],
+                "unplanned": [
+                    {
+                        "category": c["category"],
+                        "planned": float(c["planned"]),
+                        "spent": float(c["spent"]),
+                        "percent_used": float(c["percent_used"]),
+                        "status": c["status"]
+                    } for c in per_cat["unplanned"]
+                ]
+            })
+
+            budgets_response.append(budget_dict)
+        return success_response(budgets_response, "Budgets fetched successfully")
 
     @jwt_required()
     def post(self):
@@ -568,4 +611,37 @@ class CurrentBudgetResource(Resource):
 
         if not current_budget:
             return error_response("No budget found")
-        return success_response(current_budget.to_dict(),"Current budget fetched successfully!")
+        
+        overall = compute_budget_totals(current_budget)
+        per_cat = compute_per_category(current_budget)
+
+        response = current_budget.to_dict()
+        response.update({
+            "summary":{
+                "total_limit": float(overall["total_limit"]),
+                "total_spent": float(overall["total_spent"]),
+                "remaining": float(overall["remaining"]),
+                "percent_used": float(overall["percent_used"]),
+                "status": overall["status"]
+            },
+            "per_category": [
+                {
+                    "category": c["category"],
+                    "planned": float(c["planned"]),
+                    "spent": float(c["spent"]),
+                    "remaining": float(c["remaining"]),
+                    "percent_used": float(c["percent_used"]),
+                    "status": c["status"]
+                } for c in per_cat["categories"]
+            ],
+            "unplanned": [
+                {
+                    "category": c["category"],
+                    "spent": float(c["spent"]),
+                    "planned": float(c["planned"]),
+                    "percent_used": float(c["percent_used"]),
+                    "status": c["status"]
+                } for c in per_cat["unplanned"]
+            ]
+        })
+        return success_response(response,"Current budget fetched successfully!")
