@@ -2,6 +2,7 @@ from app.extensions import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date
 from sqlalchemy import func
+from decimal import Decimal
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -37,7 +38,7 @@ class Expense(db.Model):
     category = db.Column(db.String(50),nullable=False)
     date = db.Column(db.Date,default=date.today)
     description = db.Column(db.Text,nullable=True)
-    budget_id = db.Column(db.Integer,db.ForeignKey("budgets.id",ondelete="SET NULL"),nullable=True)
+    budget_id = db.Column(db.Integer,db.ForeignKey("budgets.id",ondelete="SET NULL"),nullable=True,index=True)
 
     user = db.relationship("User",backref=db.backref("expenses",lazy="dynamic"))
 
@@ -60,14 +61,37 @@ class Budget(db.Model):
     period_type = db.Column(db.Enum('weekly','monthly','yearly','custom',name='period_type_enum'),nullable=False)
     start_date = db.Column(db.Date,nullable=False)
     end_date = db.Column(db.Date,nullable=False)
-    created_at = db.Column(db.DateTime, server_default=func.now())
-    updated_at = db.Column(db.DateTime,server_default=func.now(),onupdate=func.now())
+    created_at = db.Column(db.Date, server_default=func.now())
+    updated_at = db.Column(db.Date,server_default=func.now(),onupdate=func.now())
 
     categories = db.relationship("BudgetCategory",back_populates="budget",cascade="all,delete-orphan",lazy="dynamic")
     user = db.relationship("User",backref=db.backref("budgets",lazy="dynamic"))
 
     def total_limit(self):
-        return sum([float(c.limit for c in self.categories.all())])
+        total = Decimal("0")
+        for category in self.categories.all():
+            if category.limit is not None:
+                total += Decimal(category.limit)
+        return total
+    
+    def to_dict(self):
+        return {
+            "id":self.id,
+            "name":self.name,
+            "period_type":self.period_type,
+            "start_date":self.start_date.isoformat(),
+            "end_date":self.end_date.isoformat(),
+            "total_limit": float(self.total_limit()),
+            "categories": [
+                {
+                    "id": c.id,
+                    "category": c.category,
+                    "limit":float(c.limit)
+                }
+                for c in self.categories.all()
+            ]
+        }
+        
 
 class BudgetCategory(db.Model):
     __tablename__ = "budget_categories"
