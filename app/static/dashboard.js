@@ -213,3 +213,111 @@ tableBody.addEventListener("click", (e) => {
         return;
     }
 });
+
+async function fetchAndRenderDashboardBudget() {
+    const overviewEl = document.getElementById("dashboardBudgetOverview");
+    const detailsEl = document.getElementById("dashboardBudgetDetails");
+    const percentLabel = document.getElementById("dashboardBudgetPercentLabel");
+    const progressBar = document.getElementById("dashboardBudgetProgressBar");
+    const statusBadge = document.getElementById("dashboardBudgetStatusBadge");
+
+    if (!overviewEl || !detailsEl || !percentLabel || !progressBar || !statusBadge) return;
+
+    overviewEl.innerHTML = '<div class="text-muted small">Loading current plan…</div>';
+    detailsEl.innerHTML = '';
+
+    try {
+        const response = await apiFetch('/api/budgets/current',{ method: 'GET'});
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok || !payload || payload.status !== "success" || !payload.data) {
+            overviewEl.innerHTML = `<div class="text-muted small">No active plan. <a href="/budgets">Create one</a></div>`;
+            detailsEl.innerHTML = '';
+            setBudgetMeter(0,'none');
+            return;
+        }
+
+        const budget = payload.data;
+        const summary = budget.summary || { total_limit: 0, total_spent: 0, remaining: 0, percent_used: 0, status: 'green' };
+
+        const name = ( budget.name || 'Untitled plan' );
+        const start = ( budget.start_date || '' );
+        const end = ( budget.end_date || '');
+        overviewEl.innerHTML = `<div class="fw-semibold">${escapeHtml(name)}</div>
+        <div class="small text-muted">${escapeHtml(start)} — ${escapeHtml(end)}</div>`;
+
+        const planned = Number(summary.total_limit || 0);
+        const spent = Number(summary.total_spent || 0);
+        const remaining = Number(summary.remaining || (planned - spent));
+        const categoriesCount = (budget.categories && budget.categories.length) ? budget.categories.length : 0;
+
+        detailsEl.innerHTML = `
+      <li>Planned: <strong>₹${planned.toFixed(2)}</strong></li>
+      <li>Spent: <strong>₹${spent.toFixed(2)}</strong></li>
+      <li>Remaining: <strong>₹${remaining.toFixed(2)}</strong></li>
+      <li>Categories: <strong>${categoriesCount}</strong></li>
+    `;
+
+    const percent = Number(summary.percent_used || 0);
+    const status = summary.status || (percent > 100 ? 'red' : percent >= 80 ? 'yellow' : 'green');
+    setBudgetMeter(percent,status);
+        
+    } catch (err) {
+        console.error('fetching and rendering dashboard budget error',err);
+        overviewEl.innerHTML = `<div class="text-danger small">Failed to load budget overview</div>`;
+        detailsEl.innerHTML = '';
+        setBudgetMeter(0, 'none');
+    }
+}
+
+function setBudgetMeter(percent,status) {
+    const pct = Math.max(0, Math.min(100, Number(percent) || 0));
+    const label = document.getElementById("dashboardBudgetPercentLabel");
+    const bar = document.getElementById("dashboardBudgetProgressBar");
+    const badge = document.getElementById("dashboardBudgetStatusBadge");
+
+    if (!label || !bar || !badge) return;
+
+    label.textContent = pct.toFixed(2) + '%';
+    bar.style.width = pct + '%';
+    bar.setAttribute('aria-valuenow',String(pct));
+
+    bar.className = 'progress-bar';
+    badge.className = 'badge text-white';
+
+    if (status === 'green') {
+        bar.classList.add('bg-success');
+        badge.classList.add('bg-success');
+        badge.textContent = 'Good';
+    } else if (status === 'yellow') {
+        bar.classList.add('bg-warning');
+        badge.classList.add('bg-warning', 'text-dark');
+        badge.textContent = 'Near limit';
+    } else if (status === 'red') {
+        bar.classList.add('bg-danger');
+        badge.classList.add('bg-danger');
+        badge.textContent = 'Over budget';
+    } else {
+        bar.style.width = '0%';
+        badge.classList.add('bg-secondary');
+        badge.textContent = '—';
+    }
+}
+
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    fetchAndRenderDashboardBudget();
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') fetchAndRenderDashboardBudget();
+    });
+});

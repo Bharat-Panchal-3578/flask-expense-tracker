@@ -28,7 +28,7 @@ async function refreshAccessToken() {
 
     if (response.ok) {
         const data = await response.json();
-        localStorage.setItem(data.data.access_token);
+        localStorage.setItem("access_token",data.data.access_token);
         return true;
     }
 

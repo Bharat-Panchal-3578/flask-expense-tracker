@@ -57,9 +57,72 @@
   </div>
 </div>
 
+<!-- Compact Budget Overview -->
+<div class="container my-4">
+  <div class="card mt-4" id="dashboardBudgetCard" aria-live="polite">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <h5 class="card-title mb-1">Budget Overview</h5>
+          <div id="dashboardBudgetMeta" class="small text-muted">Loading current plan…</div>
+        </div>
+
+        <!-- small icon-button to open full planner (minimal footprint) -->
+        <div class="ms-3 text-end">
+          <a href="/budgets" class="btn btn-sm btn-outline-primary" title="Open full Budget Planner" aria-label="Open full Budget Planner">
+            <i class="bi bi-grid-1x2-fill me-1"></i> Planner
+          </a>
+        </div>
+      </div>
+
+      <hr class="my-3">
+
+      <!-- Main content area (two-column on wider screens, stacked on small screens) -->
+      <div class="row align-items-center gx-3">
+        <!-- left: key info -->
+        <div class="col-12 col-md-7">
+          <div id="dashboardBudgetOverview" class="mb-2">
+            <!-- JS will replace this block with:
+              Plan name (bold), date range, and a one-line summary (planned / spent / remaining)
+            -->
+            <div class="text-muted small">No active plan. <a href="/budgets">Create one</a></div>
+          </div>
+
+          <!-- small detail list -->
+          <ul class="list-unstyled small mb-0" id="dashboardBudgetDetails" style="line-height:1.5">
+            <!-- JS may inject <li>Planned: ₹...</li> etc. -->
+          </ul>
+        </div>
+
+        <!-- right: meter + badge -->
+        <div class="col-12 col-md-5">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="small text-muted">Used</div>
+            <div id="dashboardBudgetPercentLabel" class="fw-bold">0.00%</div>
+          </div>
+
+          <div class="progress" style="height:14px;">
+            <div id="dashboardBudgetProgressBar" class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="width:0%"></div>
+          </div>
+
+          <div class="mt-2 d-flex justify-content-between align-items-center">
+            <span id="dashboardBudgetStatusBadge" class="badge bg-secondary text-white">—</span>
+            <!-- tiny action area -->
+            <div>
+              <a href="/budgets" class="btn btn-sm btn-outline-secondary">Open</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
+    <script src="{{ url_for('static',filename='api.js') }}"></script>
     <script src="{{ url_for('static',filename='dashboard.js') }}"></script>
 {% endblock %}
