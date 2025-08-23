@@ -243,8 +243,9 @@ class BudgetListResource(Resource):
             user_id = int(identity)
         except Exception:
             return error_response("Invalid token identity", 401)
-
-        budgets = Budget.query.filter_by(user_id=user_id).all()
+        
+        today = date.today()
+        budgets = Budget.query.filter_by(user_id=user_id).order_by(Budget.start_date.desc()).all()
         budgets_response = []
 
         for budget in budgets:
@@ -606,8 +607,13 @@ class CurrentBudgetResource(Resource):
     @jwt_required()
     def get(self):
         user_id = int(get_jwt_identity())
+        today = date.today()
 
-        current_budget = Budget.query.filter_by(user_id=user_id).order_by(Budget.id.desc()).first()
+        current_budget = Budget.query.filter(
+            Budget.user_id==user_id,
+            Budget.start_date <= today,
+            Budget.end_date >= today
+        ).order_by(Budget.id.desc()).first()
 
         if not current_budget:
             return error_response("No budget found")

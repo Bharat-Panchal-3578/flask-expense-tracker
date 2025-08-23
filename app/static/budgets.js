@@ -98,61 +98,145 @@ function initCategoryRepeater() {
 }
 
 async function loadCurrentPlan() {
-    const statsEl = document.getElementById('overviewStats');
-    const meterEl = document.getElementById('overviewMeter');
-    const addBtn = document.getElementById('addBudgetExpenseBtn');
-    const editBtn = document.getElementById('editPlanBtn');
-    
-    if (!statsEl || !meterEl) return;
-    
-    try {
-        const response = await apiFetch('/api/budgets/current', { method: 'GET'});
-        const payload = await response.json().catch(() => null);
-        
-        if (!response.ok || !payload || payload.status !== 'success' || !payload.data) {
-            statsEl.innerHTML = `<span class="text-muted">No active plan yet. Create one above.</span>`;
-            setMeter(meterEl, 0, 'none');
-            if (addBtn) addBtn.disabled = true;
-            if (editBtn) editBtn.disabled = true;
-            return;
-        }
-        
-        const budget = payload.data;
-        const summary = budget.summary || {};
-        const planned = Number(summary.total_limit || 0);
-        const spent = Number(summary.total_spent || 0);
-        const remain = Number(summary.remaining ?? (planned - spent));
-        const pct = Number(summary.percent_used || 0);
-        const status = summary.status || (pct > 100 ? 'red' : pct >=80 ? 'yellow' : 'green');
+  const headerEl = document.getElementById('activePlanHeader');
+  const meterEl = document.getElementById('activePlanMeter');
+  const catsEl = document.getElementById('activePlanCategories');
+  const unplannedEl = document.getElementById('activePlanUnplanned');
+  const addBtn = document.getElementById('addBudgetExpenseBtn');
+  const editBtn = document.getElementById('editPlanBtn');
 
-        statsEl.innerHTML = `
-        <div class="d-flex flex-wrap justify-content-between align-items-center">
+  if (!headerEl || !meterEl) return;
+
+  try {
+    const response = await apiFetch('/api/budgets/current', { method: 'GET' });
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok || !payload || payload.status !== 'success' || !payload.data) {
+      headerEl.innerHTML = `<span class="text-muted">No active plan for today.</span>`;
+      meterEl.innerHTML = '';
+      catsEl && (catsEl.innerHTML = '');
+      unplannedEl && (unplannedEl.innerHTML = '');
+      addBtn && (addBtn.disabled = true);
+      editBtn && (editBtn.disabled = true);
+      return;
+    }
+
+    const budget = payload.data;
+    const summary = budget.summary || {};
+    const planned = Number(summary.total_limit || 0);
+    const spent = Number(summary.total_spent || 0);
+    const remain = Number(summary.remaining ?? (planned - spent));
+    const pct = Number(summary.percent_used || 0);
+    const status = summary.status || (pct > 100 ? 'red' : pct >= 80 ? 'yellow' : 'green');
+
+    headerEl.innerHTML = `
+      <div class="d-flex flex-wrap justify-content-between align-items-center">
         <div>
-        <div class="fw-semibold">${escapeHtml(budget.name || 'Untitled plan')}</div>
-        <div class="small text-muted">${escapeHtml(budget.start_date || '')} — ${escapeHtml(budget.end_date || '')}</div>
+          <div class="fw-semibold">${escapeHtml(budget.name || 'Untitled plan')}</div>
+          <div class="small text-muted">${escapeHtml(budget.start_date || '')} — ${escapeHtml(budget.end_date || '')}</div>
         </div>
         <ul class="list-unstyled mb-0 small">
-        <li>Planned: <strong>${formatINR(planned)}</strong></li>
-        <li>Spent: <strong>${formatINR(spent)}</strong></li>
-        <li>Remaining: <strong>${formatINR(remain)}</strong></li>
+          <li>Planned: <strong>${formatINR(planned)}</strong></li>
+          <li>Spent: <strong>${formatINR(spent)}</strong></li>
+          <li>Remaining: <strong>${formatINR(remain)}</strong></li>
         </ul>
-        </div>
-        `;
-        
-        setMeter(meterEl, pct, status);
-        
-        if (addBtn) addBtn.disabled = false;
-        if (editBtn) editBtn.disabled = false;
-        
-        const hiddenBudgetId = document.querySelector('#budgetExpenseForm input[name="budget_id"]');
-        if (hiddenBudgetId) hiddenBudgetId.value = budget.id;
-    } catch (err) {
-        console.error('Loading current plan failed', err);
-        statsEl.innerHTML = `<span class="text-danger">Failed to load current plan.</span>`;
-        setMeter(meterEl, 0, 'none');
-        if (addBtn) addBtn.disabled = true;
-        if (editBtn) editBtn.disabled = true;
+      </div>
+    `;
+    setMeter(meterEl, pct, status);
+
+    // categories table (quick + simple)
+    if (catsEl) {
+      const rows = (budget.per_category || []).map(c => `
+        <tr>
+          <td>${escapeHtml(c.category)}</td>
+          <td>${formatINR(c.planned || 0)}</td>
+          <td>${formatINR(c.spent || 0)}</td>
+          <td>${formatINR(c.remaining || (c.planned - c.spent))}</td>
+          <td>${(Number(c.percent_used || 0)).toFixed(1)}%</td>
+          <td><span class="badge ${c.status==='red'?'bg-danger':c.status==='yellow'?'bg-warning':'bg-success'}">${escapeHtml(c.status || '')}</span></td>
+        </tr>
+      `).join('');
+      catsEl.innerHTML = `
+        <div class="fw-semibold mb-2">Categories</div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead><tr>
+              <th>Category</th><th>Planned</th><th>Spent</th><th>Remaining</th><th>% Used</th><th>Status</th>
+            </tr></thead>
+            <tbody>${rows || '<tr><td colspan="6" class="text-muted">No categories</td></tr>'}</tbody>
+          </table>
+        </div>`;
     }
+
+    // unplanned list
+    if (unplannedEl) {
+      const items = (budget.unplanned || []).map(u => `
+        <li class="list-group-item d-flex justify-content-between">
+          <span>${escapeHtml(u.category || 'Uncategorized')}</span>
+          <span>${formatINR(u.spent || 0)}</span>
+        </li>
+      `).join('');
+      unplannedEl.innerHTML = `
+        <div class="fw-semibold mb-2">Unplanned Categories</div>
+        <ul class="list-group list-group-flush">${items || '<li class="list-group-item text-muted">No unplanned spend</li>'}</ul>
+      `;
+    }
+
+    addBtn && (addBtn.disabled = false);
+    editBtn && (editBtn.disabled = false);
+
+    const hiddenBudgetId = document.querySelector('#budgetExpenseForm input[name="budget_id"]');
+    if (hiddenBudgetId) hiddenBudgetId.value = budget.id;
+
+  } catch (err) {
+    console.error('Loading current plan failed', err);
+    headerEl.innerHTML = `<span class="text-danger">Failed to load current plan.</span>`;
+    meterEl.innerHTML = '';
+    catsEl && (catsEl.innerHTML = '');
+    unplannedEl && (unplannedEl.innerHTML = '');
+    addBtn && (addBtn.disabled = true);
+    editBtn && (editBtn.disabled = true);
+  }
+}
+
+async function loadOtherPlans() {
+  const listEl = document.getElementById("otherPlansList");
+  if (!listEl) return;
+
+  try {
+    const response = await apiFetch('/api/budgets',{method: "GET"});
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok || !payload || payload.status !== 'success') {
+      listEl.innerHTML = `<span class="text-danger">Failed to load plans.</span>`;
+      return;
+    }
+
+    const plans = (payload.data || []).filter(p => !p.is_active);
+    if (!plans.length) {
+      listEl.innerHTML = `(No other plans yet)`;
+      return;
+    }
+
+    listEl.innerHTML = plans.map(p => `
+      <div class="border rounded p-2 mb-2">
+        <div class="d-flex justify-content-between">
+          <div>
+            <div class="fw-semibold">${escapeHtml(p.name || 'Untitled')}</div>
+            <div class="text-muted small">${escapeHtml(p.start_date)} — ${escapeHtml(p.end_date)}</div>
+          </div>
+          <div class="text-end small">
+            Planned: <strong>${formatINR(p.summary?.total_limit || 0)}</strong><br/>
+            Spent: <strong>${formatINR(p.summary?.total_spent || 0)}</strong>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+  } catch (err) {
+    console.error("Loading other plans failed",err);
+    listEl.innerHTML = `<span class="text-danger">Network error while loading plans.</span>`;
+  }
 }
 
 function collectCategories() {
@@ -272,9 +356,13 @@ document.addEventListener('DOMContentLoaded', () => {
     initCreateFormToggle();
     categoryRepeater = initCategoryRepeater();
     loadCurrentPlan();
+    loadOtherPlans();
 
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') loadCurrentPlan();
+        if (document.visibilityState === 'visible') {
+          loadCurrentPlan();
+          loadOtherPlans();
+        }
     });
 
     const form = document.getElementById("createPlanForm");
