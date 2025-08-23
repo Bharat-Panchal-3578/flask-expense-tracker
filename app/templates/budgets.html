@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container my-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Budget Planner</h2>
+    <a href="/dashboard" class="btn btn-sm btn-outline-secondary">Back to Dashboard</a>
+  </div>
+
+  <!-- Create Plan (collapsed for now) -->
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span>Create Budget Plan</span>
+      <button class="btn btn-sm btn-link" id="toggleCreateForm">Show</button>
+    </div>
+    <div class="card-body collapse" id="createPlanBody">
+      <form id="createPlanForm" autocomplete="off">
+        <div class="row g-2">
+          <div class="col-md-4">
+            <input name="name" class="form-control" placeholder="Plan name" required />
+          </div>
+          <div class="col-md-3">
+            <select name="period_type" class="form-select" required>
+              <option value="monthly">Monthly</option>
+              <option value="weekly">Weekly</option>
+              <option value="yearly">Yearly</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <input type="date" name="start_date" class="form-control" required />
+          </div>
+          <div class="col-md-2">
+            <input type="date" name="end_date" class="form-control" required />
+          </div>
+          <div class="col-md-1 d-grid">
+            <button class="btn btn-primary" type="submit">Save</button>
+          </div>
+        </div>
+
+        <!-- categories shell (client will manage repeater) -->
+        <hr />
+        <div id="categoriesShell" class="mt-2">
+          <div class="mb-2 small text-muted">Categories (add at least one)</div>
+          <div id="categoryList"></div>
+          <button type="button" id="addCategoryBtn" class="btn btn-sm btn-outline-secondary mt-2">+ Add category</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Active plan overview (filled by JS) -->
+  <div id="activePlanCard" class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span>Active Plan Overview</span>
+      <div>
+        <button id="addBudgetExpenseBtn" class="btn btn-sm btn-primary" disabled>+ Add Budget Expense</button>
+        <button id="editPlanBtn" class="btn btn-sm btn-outline-secondary ms-2" disabled>Edit</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div id="overviewStats">No active plan yet.</div>
+      <div id="overviewMeter" class="mt-3"></div>
+    </div>
+  </div>
+
+  <!-- Planned vs Actual -->
+  <div class="card mb-4">
+    <div class="card-header">Planned vs Actual</div>
+    <div class="card-body">
+      <div id="plannedVsActualShell">(Nothing to show)</div>
+    </div>
+  </div>
+
+  <!-- Expense Log -->
+  <div class="card mb-4">
+    <div class="card-header">Budget Expense Log</div>
+    <div class="card-body">
+      <div id="expenseLogShell">(Nothing to show)</div>
+    </div>
+  </div>
+</div>
+
+<!-- Budget Expense Modal (budget-specific logger) -->
+<div id="budgetExpenseModal" class="modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="budgetExpenseForm" autocomplete="off">
+        <div class="modal-header">
+          <h5 class="modal-title">Add Budget Expense</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="budget_id" />
+          <input type="date" name="date" class="form-control mb-2" required>
+          <input type="text" name="category" class="form-control mb-2" placeholder="Category" required>
+          <input type="text" name="description" class="form-control mb-2" placeholder="Description">
+          <input type="number" step="0.01" name="amount" class="form-control mb-2" placeholder="Amount" required>
+          <div id="budgetExpenseError" class="text-danger small mt-2" role="alert" aria-live="polite"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Add</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+    <script src="{{ url_for('static',filename='api.js') }}"></script>
+    <script src="{{ url_for('static',filename='budgets.js') }}"></script>
+{% endblock %}

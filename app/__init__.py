@@ -3,6 +3,7 @@ from app.main import main
 from app.api import api_bp
 from app.auth import auth
 from app.dashboard import dashboard
+from app.budget import budget
 from app.extensions import db,jwt, migrate
 
 def create_app(config_class="config.Config"):
@@ -17,5 +18,6 @@ def create_app(config_class="config.Config"):
     app.register_blueprint(api_bp,url_prefix="/api")
     app.register_blueprint(auth)
     app.register_blueprint(dashboard)
+    app.register_blueprint(budget)
     
     return app
