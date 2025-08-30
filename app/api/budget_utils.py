@@ -20,7 +20,6 @@ def _to_decimal(value):
     except (InvalidOperation, TypeError, ValueError):
         return Decimal("0")
 
-
 def status_from_decimal(percent_decimal: Decimal) -> str:
     """Returns status string based on percent used (Decimal)"""
     if percent_decimal < green_threshold:
@@ -143,3 +142,12 @@ def compute_per_category(budget):
             })
         
     return {"categories": results, "unplanned": unplanned}
+
+def get_budget_type(budget):
+    today = date.today()
+    if budget.start_date <= today <= budget.end_date:
+        return "active"
+    elif today < budget.start_date:
+        return "upcoming"
+    else:
+        return "past"

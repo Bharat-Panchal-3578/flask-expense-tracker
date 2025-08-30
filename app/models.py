@@ -92,7 +92,6 @@ class Budget(db.Model):
             ]
         }
         
-
 class BudgetCategory(db.Model):
     __tablename__ = "budget_categories"
     id = db.Column(db.Integer,primary_key=True)

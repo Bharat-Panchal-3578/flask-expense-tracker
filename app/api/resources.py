@@ -3,9 +3,9 @@ from flask_restful import Resource
 from flask_jwt_extended import create_access_token, create_refresh_token, set_refresh_cookies, jwt_required, get_jwt_identity, unset_jwt_cookies
 from app.extensions import db
 from .utils import _parse_amount, _parse_args, _parse_date
-from .budget_utils import compute_budget_totals, compute_per_category
+from .budget_utils import compute_budget_totals, compute_per_category, get_budget_type
 from sqlalchemy import or_, update
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from app.models import User, Expense, Budget, BudgetCategory
 from app.utils import success_response, error_response
 from datetime import timedelta, date
@@ -243,8 +243,7 @@ class BudgetListResource(Resource):
             user_id = int(identity)
         except Exception:
             return error_response("Invalid token identity", 401)
-        
-        today = date.today()
+
         budgets = Budget.query.filter_by(user_id=user_id).order_by(Budget.start_date.desc()).all()
         budgets_response = []
 
@@ -296,7 +295,6 @@ class BudgetListResource(Resource):
             "period_type": "monthly",
             "start_date": "YYYY-MM-DD",
             "end_date": "YYYY-MM-DD",
-            "categories": [{"category":"Groceries","limit":1000}, ...] 
             }
         """
 
@@ -331,6 +329,9 @@ class BudgetListResource(Resource):
         if overlap:
             return error_response("Budget window overlaps with an existing plan",400)
         
+        if "categories" in data:
+            return error_response("Do not include categories here. Use /api/budgets/<id>/categories instead.",400)
+        
         budget = Budget(
             user_id=user_id,
             name=name,
@@ -339,31 +340,13 @@ class BudgetListResource(Resource):
             end_date=end_date
         )
 
-        db.session.add(budget)
-        db.session.flush()
-
-        categories = data.get("categories") or []
-        created_categories = []
-        for category in categories:
-            category_name = (category.get("category") or "").strip()
-            if not category_name:
-                continue
-
-            limit = _parse_amount(category.get("limit"))
-            if limit is None:
-                limit = Decimal("0")
-            budget_category = BudgetCategory(budget_id=budget.id,category=category_name,limit=limit)
-            created_categories.append({"category":category_name,"limit":float(limit)})
-            db.session.add(budget_category)
-        db.session.commit()
-
         response_data = {
             "id":budget.id,
             "name":name,
             "period_type":period_type,
             "start_date":start_date.isoformat(),
             "end_date":end_date.isoformat(),
-            "categories":created_categories
+            "categories": []
         }
 
         return success_response(response_data,"Budget created successfully",201)
@@ -380,14 +363,20 @@ class BudgetListResource(Resource):
         budget = Budget.query.filter_by(id=budget_id).first()
         if not budget or budget.user_id != user_id:
             return error_response("Budget not found or unauthorized", 404)
+        
+        budget_type = get_budget_type(budget)
+        if budget_type == "past":
+            return error_response("Cannot update a past budget",400)
 
         data = request.get_json() or {}
+
+        if "categories" in data:
+            return error_response("Categories cannot be via this endpoint. Use category endpoints instead.",400)
 
         name = data.get("name") if "name" in data else None
         period_type = data.get("period_type") if "period_type" in data else None
         start_date_str = data.get("start_date") if "start_date" in data else None
         end_date_str = data.get("end_date") if "end_date" in data else None
-        categories_payload = data.get("categories") if "categories" in data else None
 
         # parse dates
         start_date = _parse_date(start_date_str) if start_date_str is not None else None
@@ -434,128 +423,26 @@ class BudgetListResource(Resource):
                     400
                 )
 
-        # Begin category validation & operations (if categories provided)
         try:
-            if categories_payload is not None:
-                if not isinstance(categories_payload, list):
-                    return error_response("categories must be an array", 400)
-
-                # Validate payload items and detect duplicate names within payload
-                seen_names = {}
-                payload_items = []  # each: {"id":..., "category":..., "category_normalized":..., "limit": Decimal}
-                for idx, item in enumerate(categories_payload):
-                    if not isinstance(item, dict):
-                        return error_response("Each category must be an object", 400)
-
-                    category_id = item.get("id", None)
-                    raw_name = (item.get("category") or "").strip()
-                    if not raw_name:
-                        return error_response(f"Category name required for item at index {idx}", 400)
-                    category_name_normalized = raw_name
-
-                    raw_limit = item.get("limit", None)
-                    parsed_limit = _parse_amount(raw_limit)
-                    if parsed_limit is None:
-                        parsed_limit = Decimal("0")
-                    if parsed_limit < 0:
-                        return error_response("Category limit must be >= 0", 400)
-
-                    # duplicate name check within payload
-                    if category_name_normalized in seen_names:
-                        return error_response(f"Duplicate category name in payload: '{raw_name}'", 400)
-                    seen_names[category_name_normalized] = True
-
-                    payload_items.append({
-                        "id": category_id,
-                        "category": raw_name,
-                        "category_normalized": category_name_normalized,
-                        "limit": parsed_limit
-                    })
-
-                # Load existing categories for this budget
-                existing_categories = budget.categories.all()
-                existing_by_id = {c.id: c for c in existing_categories}
-                existing_by_name = {c.category.strip(): c for c in existing_categories}
-
-                # Ensure any provided ids belong to this budget
-                for itm in payload_items:
-                    if itm["id"] is not None:
-                        if itm["id"] not in existing_by_id:
-                            return error_response(f"Invalid category id: {itm['id']}", 400)
-
-                # Ensure no name collisions between payload and other existing categories (excluding updates of same id)
-                for itm in payload_items:
-                    incoming_name = itm["category_normalized"]
-                    incoming_id = itm["id"]
-                    if incoming_name in existing_by_name:
-                        existing_cat = existing_by_name[incoming_name]
-                        # If the existing category is not the same row we're updating, that's a conflict
-                        if incoming_id is None or existing_cat.id != incoming_id:
-                            return error_response(f"Category name conflicts with existing category: '{itm['category']}'", 400)
-
-                # Determine which to update, insert, delete
-                payload_ids = {itm["id"] for itm in payload_items if itm["id"] is not None}
-                existing_ids = set(existing_by_id.keys())
-
-                ids_to_update = payload_ids & existing_ids
-                items_to_insert = [itm for itm in payload_items if itm["id"] is None]
-                ids_to_delete = existing_ids - payload_ids
-
-                # Apply updates
-                for update_id in ids_to_update:
-                    item = next(x for x in payload_items if x.get("id") == update_id)
-                    category_obj = existing_by_id[update_id]
-
-                    new_name = item["category"].strip()
-                    new_limit = item["limit"]
-
-                    # update only if different
-                    if category_obj.category != new_name:
-                        category_obj.category = new_name
-                    # category_obj.limit may be Decimal already; coerce for safe compare
-                    try:
-                        existing_limit_decimal = Decimal(str(category_obj.limit))
-                    except Exception:
-                        existing_limit_decimal = Decimal("0")
-                    if existing_limit_decimal != new_limit:
-                        category_obj.limit = new_limit
-
-                # Apply inserts
-                for item in items_to_insert:
-                    created_category = BudgetCategory(
-                        budget_id=budget.id,
-                        category=item["category"].strip(),
-                        limit=item["limit"]
-                    )
-                    db.session.add(created_category)
-
-                # Apply deletes
-                for delete_id in ids_to_delete:
-                    delete_obj = existing_by_id[delete_id]
-                    db.session.delete(delete_obj)
-
-            # After categories validated and staged, apply budget-level updates
             if name is not None:
                 name = (name or "").strip()
                 if not name:
-                    return error_response("name cannot be empty", 400)
+                    return error_response("name cannot be empty",400)
                 budget.name = name
-
+            
             if period_type is not None:
                 budget.period_type = period_type
-
+            
             if start_date is not None:
                 budget.start_date = start_date
             if end_date is not None:
                 budget.end_date = end_date
 
-            # Commit all changes atomically
             db.session.commit()
 
         except Exception as e:
             db.session.rollback()
-            # avoid leaking internal exception details in production; returning message for debugging here
-            return error_response("Failed to update budget: " + str(e), 500)
+            return error_response("Failed to update budget:",e)
 
         # Build final response payload from committed state
         categories = []
@@ -651,3 +538,195 @@ class CurrentBudgetResource(Resource):
             ]
         })
         return success_response(response,"Current budget fetched successfully!")
+    
+class BudgetCategoryListResource(Resource):
+    @jwt_required()
+    def get(self,budget_id):
+        identity = get_jwt_identity()
+        try:
+            user_id = int(identity)
+
+        except Exception:
+            return error_response("Invalid token identity",400)
+        
+        budget = Budget.query.filter_by(id=budget_id,user_id=user_id).first()
+        if not budget:
+            return error_response("Budget not found or unauthorized")
+        
+        categories = BudgetCategory.query.filter_by(budget_id=budget_id).all()
+
+        data = [
+            {
+                "id":category.id,
+                "name":category.category,
+                "limit": category.limit
+            }
+            for category in categories
+        ]
+
+        return success_response(data,"Categories fetched successfully")
+    
+    @jwt_required()
+    def post(self,budget_id):
+        identity = get_jwt_identity()
+        try:
+            user_id = int(identity)
+        except Exception:
+            return error_response("Invalid token identity",400)
+        
+        budget = Budget.query.filter_by(id=budget_id,user_id=user_id).first()
+        if not budget:
+            return error_response("Budget not found or unauthorized")
+        
+        if budget.end_date < date.today():
+            return error_response("Cannot modify past budgets",400)
+        
+        data = request.get_json()
+        if not data or "category" not in data or "limit" not in data:
+            return error_response("Category and limit are required",400)
+        
+        category_name = (data.get("category") or "").strip()
+        category_limit = data.get("limit")
+
+        if not category_name:
+            return error_response("Invalid category name",400)
+        
+        try:
+            category_limit = float(category_limit)
+            if category_limit < 0:
+                return error_response("Limit must be greater than 0",400)
+        
+        except ValueError:
+            return error_response("Limit must be a valid number",400)
+        
+        existing = BudgetCategory.query.filter_by(budget_id=budget.id,category=category_name).first()
+        if existing:
+            return error_response("Category already exists in this budget",400)
+        
+        new_category = BudgetCategory(
+            budget_id=budget.id,
+            category=category_name,
+            limit=category_limit
+        )
+
+        db.session.add(new_category)
+        db.session.commit()
+
+        return success_response({"id":new_category.id,"category":new_category.category,"limit":new_category.limit},"Category created successfully",201)
+
+class BudgetCategoryResource(Resource):
+    @jwt_required()
+    def put(self,budget_id,category_id):
+        identity = get_jwt_identity()
+        try:
+            user_id = int(identity)
+        except Exception:
+            return error_response("Invalid token identity",400)
+        
+        budget = Budget.query.filter_by(id=budget_id,user_id=user_id).first()
+        if not budget:
+            return error_response("Budget not found or unauthorized")
+        
+        if get_budget_type(budget) == "past":
+            return error_response("Cannot modify a past budget",400)
+        
+        category = BudgetCategory.query.filter_by(id=category_id,budget_id=budget_id).first()
+        if not category:
+            return error_response("Category not found in this budget")
+
+        data = request.get_json() or {}
+        if (("name" not in data) and ("limit" not in data)):
+            return error_response("No update fields provided (expected 'name' and/or 'limit')",400)
+        
+        new_name = None
+        if "name" in data:
+            new_name = (data.get("name") or "").strip()
+
+            if not new_name:
+                return error_response("Invalid category name",400)
+            
+            conflict = BudgetCategory.query.filter(
+                BudgetCategory.budget_id == budget_id,
+                BudgetCategory.category == new_name,
+                BudgetCategory.id != category_id
+            ).first()
+
+            if conflict:
+                return error_response(f"Category name conflicts with existing category: '{new_name}'",400)
+        
+        new_limit = None        
+        if "limit" in data:
+            parsed_limit = _parse_amount(data.get("limit"))
+
+            if parsed_limit is None:
+                return error_response("Invalid limit(expected Numeric)",400)
+            
+            if parsed_limit < 0:
+                return error_response("Limit must be non-negative",400)
+            
+            new_limit = parsed_limit
+        
+        old_name = category.category
+        expense_update_needed = (new_name is not None and new_name != old_name)
+
+        try:
+            if new_name is not None:
+                category.category = new_name
+            if new_limit is not None:
+                category.limit = new_limit
+            if expense_update_needed:
+                db.session.query(Expense).filter(
+                    Expense.budget_id == budget_id,
+                    Expense.category == old_name
+                ).update({Expense.category: new_name}, synchronize_session=False)
+            
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            return error_response("Category name conflicts with existing category",400)
+        
+        except Exception:
+            db.session.rollback()
+            return error_response("Failed to update category",500)
+        
+        response = {
+            "id": category.id,
+            "category":category.category,
+            "limit":float(category.limit)
+        }
+
+        return success_response(response, "Category updated successfully")
+
+    @jwt_required()
+    def delete(self,budget_id,category_id):
+        identity = get_jwt_identity()
+        try:
+            user_id = int(identity)
+        except Exception:
+            return error_response("Invalid token identity",400)
+        
+        budget = Budget.query.filter_by(id=budget_id,user_id=user_id).first()
+        if not budget:
+            return error_response("Budget not found")
+        
+        if get_budget_type(budget) == "past":
+            return error_response("Cannot modify expired budgets",400)
+        
+        category = BudgetCategory.query.filter_by(id=category_id,budget_id=budget_id).first()
+        if not category:
+            return error_response("Category not found")
+        
+        expense_exists = Expense.query.filter_by(budget_id=budget_id, category=category.category).first()
+        if expense_exists:
+            return error_response("Cannot delete category with existing expenses",400)
+        
+        db.session.delete(category)
+        db.session.commit()
+
+        return success_response(data=
+            {
+                "id":category.id,
+                "category":category.category,
+                "limit":category.limit
+            },
+            message="Category deleted successfully")
