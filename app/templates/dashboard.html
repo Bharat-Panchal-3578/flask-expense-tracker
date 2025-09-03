@@ -2,120 +2,129 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Dashboard</h2>
+	<h2>Dashboard</h2>
 
-    <div id="flashMessage"></div>
-    
-    <!-- Add Expense Button -->
-    <button id="addExpenseBtn" class="btn btn-primary mb-3">Add Expense</button>
+	<div id="flashMessage"></div>
+	
+	<!-- Add Expense Button -->
+	<button id="addExpenseBtn" class="btn btn-primary mb-3">Add Expense</button>
 
-    <!-- Summary Section -->
-    <div id="summary" class="mb-4">
-        <p>Total Expenses: <span id="totalExpenses">0</span></p>
-        <p>Recent Transactions:</p>
-        <ul id="recentTransactions"></ul>
-    </div>
+	<!-- Summary Section -->
+	<div id="summary" class="mb-4">
+		<div class="row g-3">
+			<!-- Total card -->
+			<div class="col-12 col-md-4">
+				<div class="card text-bg-light h-100">
+					<div class="card-body">
+						<div class="small text-uppercase text-muted">Total Expenses</div>
+						<div class="fs-4 fw-semibold" id="totalExpenses">₹0.00</div>
+					</div>
+				</div>
+			</div>
 
-    <!-- Expenses Table -->
-    <table class="table table-striped" id="expensesTable">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Category</th>
-                <th>Description</th>
-                <th>Amount</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- JS will populate this -->
-        </tbody>
-    </table>
+			<!-- Recent transactions card -->
+			<div class="col-12 col-md-8">
+				<div class="card h-100">
+					<div class="card-header d-flex justify-content-between align-items-center">
+						<span class="fw-semibold">Recent Transactions</span>
+					</div>
+					<div class="list-group list-group-flush" id="recentTransactions" aria-live="polite">
+						<!-- JS will inject list-group-items -->
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="expensesByCategory" class="row g-3">
+  		<!-- JS will dynamically inject category cards here -->
+	</div>
+
 </div>
 
 <!-- Optional: Add Expense Modal (can be enhanced later) -->
 <div id="addExpenseModal" class="modal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form id="addExpenseForm">
-        <div class="modal-header">
-          <h5 class="modal-title">Add Expense</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <input type="date" name="date" class="form-control mb-2" required>
-          <input type="text" name="category" class="form-control mb-2" placeholder="Category" required>
-          <input type="text" name="description" class="form-control mb-2" placeholder="Description">
-          <input type="number" name="amount" class="form-control mb-2" placeholder="Amount" required>
-        </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Add</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-      </form>
-    </div>
-  </div>
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<form id="addExpenseForm">
+				<div class="modal-header">
+					<h5 class="modal-title">Add Expense</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<input type="date" name="date" class="form-control mb-2" required>
+					<input type="text" name="category" class="form-control mb-2" placeholder="Category" required>
+					<input type="text" name="description" class="form-control mb-2" placeholder="Description">
+					<input type="number" name="amount" class="form-control mb-2" placeholder="Amount" required>
+				</div>
+				<div class="modal-footer">
+					<button type="submit" class="btn btn-primary">Add</button>
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+				</div>
+			</form>
+		</div>
+	</div>
 </div>
 
 <!-- Compact Budget Overview -->
 <div class="container my-4">
-  <div class="card mt-4" id="dashboardBudgetCard" aria-live="polite">
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-start">
-        <div>
-          <h5 class="card-title mb-1"> Planned Budget Overview</h5>
-          <div id="dashboardBudgetMeta" class="small text-muted">Loading current plan…</div>
-        </div>
+	<div class="card mt-4" id="dashboardBudgetCard" aria-live="polite">
+		<div class="card-body">
+			<div class="d-flex justify-content-between align-items-start">
+				<div>
+					<h5 class="card-title mb-1"> Planned Budget Overview</h5>
+					<div id="dashboardBudgetMeta" class="small text-muted">Loading current plan…</div>
+				</div>
 
-        <!-- small icon-button to open full planner (minimal footprint) -->
-        <div class="ms-3 text-end">
-          <a href="/budgets" class="btn btn-sm btn-outline-primary" title="Open full Budget Planner" aria-label="Open full Budget Planner">
-            <i class="bi bi-grid-1x2-fill me-1"></i> Planner
-          </a>
-        </div>
-      </div>
+				<!-- small icon-button to open full planner (minimal footprint) -->
+				<div class="ms-3 text-end">
+					<a href="/budgets" class="btn btn-sm btn-outline-primary" title="Open full Budget Planner" aria-label="Open full Budget Planner">
+						<i class="bi bi-grid-1x2-fill me-1"></i> Plan Budgets
+					</a>
+				</div>
+			</div>
 
-      <hr class="my-3">
+			<hr class="my-3">
 
-      <!-- Main content area (two-column on wider screens, stacked on small screens) -->
-      <div class="row align-items-center gx-3">
-        <!-- left: key info -->
-        <div class="col-12 col-md-7">
-          <div id="dashboardBudgetOverview" class="mb-2">
-            <!-- JS will replace this block with:
-              Plan name (bold), date range, and a one-line summary (planned / spent / remaining)
-            -->
-            <div class="text-muted small">No active plan. <a href="/budgets">Create one</a></div>
-          </div>
+			<!-- Main content area (two-column on wider screens, stacked on small screens) -->
+			<div class="row align-items-center gx-3">
+				<!-- left: key info -->
+				<div class="col-12 col-md-7">
+					<div id="dashboardBudgetOverview" class="mb-2">
+						<!-- JS will replace this block with:
+							Plan name (bold), date range, and a one-line summary (planned / spent / remaining)
+						-->
+						<div class="text-muted small">No active plan. <a href="/budgets">Create one</a></div>
+					</div>
 
-          <!-- small detail list -->
-          <ul class="list-unstyled small mb-0" id="dashboardBudgetDetails" style="line-height:1.5">
-            <!-- JS may inject <li>Planned: ₹...</li> etc. -->
-          </ul>
-        </div>
+					<!-- small detail list -->
+					<ul class="list-unstyled small mb-0" id="dashboardBudgetDetails" style="line-height:1.5">
+						<!-- JS may inject <li>Planned: ₹...</li> etc. -->
+					</ul>
+				</div>
 
-        <!-- right: meter + badge -->
-        <div class="col-12 col-md-5">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <div class="small text-muted">Used</div>
-            <div id="dashboardBudgetPercentLabel" class="fw-bold">0.00%</div>
-          </div>
+				<!-- right: meter + badge -->
+				<div class="col-12 col-md-5">
+					<div class="d-flex justify-content-between align-items-center mb-2">
+						<div class="small text-muted">Used</div>
+						<div id="dashboardBudgetPercentLabel" class="fw-bold">0.00%</div>
+					</div>
 
-          <div class="progress" style="height:14px;">
-            <div id="dashboardBudgetProgressBar" class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="width:0%"></div>
-          </div>
+					<div class="progress" style="height:14px;">
+						<div id="dashboardBudgetProgressBar" class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="width:0%"></div>
+					</div>
 
-          <div class="mt-2 d-flex justify-content-between align-items-center">
-            <span id="dashboardBudgetStatusBadge" class="badge bg-secondary text-white">—</span>
-            <!-- tiny action area -->
-            <div>
-              <a href="/budgets" class="btn btn-sm btn-outline-secondary">Open</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+					<div class="mt-2 d-flex justify-content-between align-items-center">
+						<span id="dashboardBudgetStatusBadge" class="badge bg-secondary text-white">—</span>
+						<!-- tiny action area -->
+						<div>
+							<a href="/budgets" class="btn btn-sm btn-outline-secondary">Open</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 
 
@@ -123,6 +132,6 @@
 
 {% block scripts %}
 {{ super() }}
-    <script src="{{ url_for('static',filename='api.js') }}"></script>
-    <script src="{{ url_for('static',filename='dashboard.js') }}"></script>
+		<script src="{{ url_for('static',filename='api.js') }}"></script>
+		<script src="{{ url_for('static',filename='dashboard.js') }}"></script>
 {% endblock %}

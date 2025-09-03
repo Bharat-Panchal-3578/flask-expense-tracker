@@ -1,93 +1,150 @@
-const tableBody = document.querySelector("#expensesTable tbody");
-const totalExpenses = document.querySelector("#totalExpenses");
-const recentTransactions = document.querySelector("#recentTransactions");
-const addForm = document.getElementById("addExpenseForm");
-
 let currentExpenses = [];
 let currentEditId = null;
 let addModalInstance = null;
 
-async function loadExpenses() {
-    const response = await fetch("/api/expenses", {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("access_token")}`
-        }
-    });
-    const data = await response.json();
+const totalExpensesEl = document.querySelector("#totalExpenses");
+const recentTransactionsEl = document.querySelector("#recentTransactions");
+const expensesByCategoryEl = document.querySelector("#expensesByCategory");
+const addForm = document.querySelector("#addExpenseForm");
+const addModalEl = document.querySelector("#addExpenseModal");
+const flashMessageEl = document.querySelector("#flashMessage");
 
-    if (data.status === "success") {
-        const expenses = data.data.expenses;
-        currentExpenses = expenses;
-        tableBody.innerHTML = '';
-        recentTransactions.innerHTML = '';
-
-        if (expenses.length === 0) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="text-center text-muted py-4">
-                        <i class="bi bi-wallet2 me-2"></i>
-                        No expenses yet. Click <strong>Add Expense</strong> to create your first one.
-                    </td>
-                </tr>
-            `;
-            recentTransactions.innerHTML = `<li class="text-muted">No recent transactions</li>`;
-            totalExpenses.textContent = `₹0.00`;
-            return;
-        }
-
-        let total = 0;
-        expenses.forEach((exp, idx) => {
-            total += parseFloat(exp.amount);
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${exp.date}</td>
-                <td>${exp.category}</td>
-                <td>${exp.description}</td>
-                <td>₹${exp.amount}</td>
-                <td>
-                    <button class="btn btn-sm btn-warning editBtn" data-id="${exp.id}">Edit</button>
-                    <button class="btn btn-sm btn-danger deleteBtn" data-id="${exp.id}">Delete</button>
-                </td>`;
-            tableBody.appendChild(row);
-
-            if (idx < 5) {
-                const li = document.createElement("li");
-                li.textContent = `${exp.date} - ${exp.category} - ₹${exp.amount}`;
-                recentTransactions.appendChild(li);
-            }
-        });
-
-        totalExpenses.textContent = `₹${total.toFixed(2)}`;
-    }
+/* Utility Functions */
+function showFlash(message, type) {
+    flashMessageEl.innerHTML = `
+    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>`
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    addModalInstance = new bootstrap.Modal(document.getElementById("addExpenseModal"));
-    document.getElementById("addExpenseBtn").addEventListener("click", () => {
-        currentEditId = null;
-        const modalTitle = document.querySelector("#addExpenseModal .modal-title");
-        if (modalTitle) modalTitle.textContent = "Add Expense";
+function resetExpenseModal(title="Add Expense",btnText="Add") {
+    addForm.reset();
+    currentEditId = null;
+    const modalTitle = addModalEl.querySelector(".modal-title");
+    const submitBtn = addModalEl.querySelector("button[type='submit']");
+    if (modalTitle) modalTitle.textContent = title;
+    if (submitBtn) submitBtn.textContent = btnText;
+}
 
-        const submitBtn = document.querySelector("#addExpenseModal button[type='submit']");
-        if (submitBtn) submitBtn.textContent = "Add";
+/* Rendering Functions */
+function renderTotalExpenses(expenses) {
+    const total = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+    totalExpensesEl.textContent = `₹${total.toFixed(2)}`;
+}
 
-        addForm.reset();
+function renderRecentTransactions(expenses) {
+    recentTransactionsEl.innerHTML = "";
+    if (expenses.length === 0) {
+        recentTransactionsEl.innerHTML = `<li class="list-group-item text-muted">No recent transactions</li>`;
+        return;
+    }
 
-        addModalInstance.show();
+    expenses.slice(0,5).forEach(exp => {
+        const li = document.createElement("li");
+        li.className = "list-group-item d-flex justify-content-between align-items-center";
+        li.innerHTML = `
+            <div>
+                <div class="fw-semibold">${exp.category}</div>
+                <small class="text-muted">${exp.date} - ${exp.description || "No description"}</small>
+            </div>
+            <span class="fw-bold">₹${exp.amount}</span>
+        `;
+        recentTransactionsEl.appendChild(li);
     });
-    loadExpenses();
+}
 
-    document.getElementById("addExpenseModal").addEventListener("hidden.bs.modal",() => {
-        currentEditId = null;
-        addForm.reset();
-        const modalTitle = document.querySelector("#addExpenseModal .modal-title");
-        if (modalTitle) modalTitle.textContent = "Add Expense";
-        const submitBtn = document.querySelector("#addExpenseModal button[type='submit']");
-        if (submitBtn) submitBtn.textContent = "Add";
-    })
-});
+function renderExpensesByCategory(expenses) {
+    expensesByCategoryEl.innerHTML = "";
+    if (expenses.length === 0) {
+        expensesByCategoryEl.innerHTML = `
+            <div class="col-12 text-center text-muted py-4">
+                <i class="bi bi-wallet2 me-2"></i>No expenses yet. Click <strong>Add Expense</strong> to create one.
+            </div>`;
+        return;
+    }
+
+    // Group expenses by category
+    const grouped = {};
+    expenses.forEach(exp => {
+        if (!grouped[exp.category]) grouped[exp.category] = [];
+        grouped[exp.category].push(exp);
+    });
+
+    Object.keys(grouped).forEach(category => {
+        const col = document.createElement("div");
+        col.className = "col-12 col-md-6 col-lg-4";
+
+        const card = document.createElement("div");
+        card.className = "card h-100 shadow-sm";
+
+        const cardHeader = document.createElement("div");
+        cardHeader.className = "card-header d-flex justify-content-between align-items-center";
+
+        const headerTitle = document.createElement("div");
+        headerTitle.innerHTML = `
+            <div class="fw-semibold">${category}</div>
+            <div class="small text-muted">
+                Total spent: <strong>₹${grouped[category].reduce((sum, exp) => sum + exp.amount, 0).toFixed(2)}</strong>
+            </div>`;
+
+        cardHeader.appendChild(headerTitle);
+        card.appendChild(cardHeader);
+
+        const cardBody = document.createElement("div");
+        cardBody.className = "card-body p-0";
+
+        const list = document.createElement("ul");
+        list.className = "list-group list-group-flush";
+
+        grouped[category].forEach(exp => {
+            const item = document.createElement("li");
+            item.className = "list-group-item d-flex justify-content-between align-items-start";
+
+            item.innerHTML = `
+                <div class="me-3">
+                    <div class="fw-medium">${exp.description || "No description"}</div>
+                    <div class="small text-muted">${exp.date}</div>
+                </div>
+                <div class="text-end">
+                    <div class="fw-semibold">₹${exp.amount.toFixed(2)}</div>
+                    <div class="mt-1 d-flex gap-2 justify-content-end">
+                        <button class="btn btn-sm btn-outline-primary editBtn d-flex align-items-center gap-1" data-id="${exp.id}">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger deleteBtn d-flex align-items-center gap-1" data-id="${exp.id}">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>`;
+
+            list.appendChild(item);
+        });
+
+        cardBody.appendChild(list);
+        card.appendChild(cardBody);
+        col.appendChild(card);
+        expensesByCategoryEl.appendChild(col);
+    });
+}
+
+async function loadExpenses() {
+    try {
+        const response = await apiFetch("/api/expenses",{ method: "GET"});
+        const data = await response.json();
+    
+        if (data.status !== "success") throw new Error(data.message);
+    
+        currentExpenses = data.data.expenses || [];
+        renderTotalExpenses(currentExpenses);
+        renderRecentTransactions(currentExpenses);
+        renderExpensesByCategory(currentExpenses);
+
+    } catch (err) {
+        console.error("Error loading Expenses:",err);
+        showFlash("Failed to load Expenses","danger");
+    }
+}
 
 addForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -103,19 +160,16 @@ addForm.addEventListener("submit", async (e) => {
         method = "PUT";
     }
 
-    const response = await fetch(url, {
-        method: method,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem("access_token")}`
-        },
+    const response = await apiFetch(url,{
+        method,
+        headers: { "Content-Type": "application/json"},
         body: JSON.stringify(payload)
     });
 
     const data = await response.json();
 
     if (data.status === "success") {
-        loadExpenses();
+        await loadExpenses();
         addForm.reset();
         currentEditId = null;
         addModalInstance = bootstrap.Modal.getInstance(document.getElementById("addExpenseModal"));
@@ -126,16 +180,7 @@ addForm.addEventListener("submit", async (e) => {
     }
 });
 
-function showFlash(message, type) {
-    document.getElementById("flashMessage").innerHTML = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    `;
-}
-
-tableBody.addEventListener("click", (e) => {
+expensesByCategoryEl.addEventListener("click", async (e) => {
     const editBtn = e.target.closest(".editBtn");
     const deleteBtn = e.target.closest(".deleteBtn");
 
@@ -145,7 +190,7 @@ tableBody.addEventListener("click", (e) => {
 
         const expense = currentExpenses.find(e => String(e.id) === String(id));
         if (!expense) {
-            showFlash("Could not find expense to edit.","danger");
+            showFlash("Could not find expense to edit.", "danger");
             return;
         }
 
@@ -160,6 +205,7 @@ tableBody.addEventListener("click", (e) => {
         if (amountInput) amountInput.value = expense.amount ?? "";
 
         currentEditId = id;
+
         const modalTitle = document.querySelector("#addExpenseModal .modal-title");
         if (modalTitle) modalTitle.textContent = "Edit Expense";
 
@@ -171,45 +217,27 @@ tableBody.addEventListener("click", (e) => {
     }
 
     if (deleteBtn) {
-        (async () => {
-            const id = deleteBtn.dataset.id;
-            if (!id) return;
+        const id = deleteBtn.dataset.id;
+        if (!id) return;
+        if (!confirm("Are you sure you want to delete the expense?")) return;
 
-            if (!confirm("Are you sure you want to delete the expense?")) return;
+        try {
+            deleteBtn.disabled= true;
+            const response = await apiFetch(`/api/expenses/${id}`,{method: 'DELETE'});
+            const payload = await response.json();
 
-            try {
-                deleteBtn.disabled = true;
-
-                const response = await fetch(`/api/expenses/${id}`,{
-                    method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json",
-                        'Authorization': `Bearer ${localStorage.getItem("access_token")}`
-                    }
-                });
-
-                if (!response.ok) {
-                    const txt = await response.text().catch(() => "");
-                    console.error("DELETE /api/expenses failed:",response.status,txt);
-                    showFlash("Server error while deleting expense.","danger");
-                    deleteBtn.disabled = false;
-                    return;
-                }
-
-                const payload = await response.json();
-                const ok = payload && payload.status === "success";
-
-                showFlash(payload.message,"success");
-
-                if (ok) await loadExpenses();
-
-            } catch (error) {
-                console.error("Error deleting expense:",error);
-                showFlash('Network error while deleting expense',"danger");
-            } finally {
-                deleteBtn.disabled = false;
+            if (payload.status === "success") {
+                showFlash(payload.message,"success")
+                await loadExpenses();
+            } else {
+                showFlash(payload.message || "Failed to delete expense","danger");
             }
-        })();
+        } catch (err) {
+            console.error("Error while deleting expense:",err);
+            showFlash("Network error while deleting expense","danger");
+        } finally {
+            deleteBtn.disabled = false;
+        }
         return;
     }
 });
@@ -314,10 +342,29 @@ function escapeHtml(s) {
     .replace(/'/g, '&#039;');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
+    // --- Initialize modal ---
+    addModalInstance = new bootstrap.Modal(addModalEl);
+
+    // --- Add Expense button opens modal ---
+    document.getElementById("addExpenseBtn").addEventListener("click", () => {
+        resetExpenseModal("Add Expense", "Add");
+        if (addModalInstance) addModalInstance.show();
+    });
+
+    // --- Reset modal when hidden ---
+    addModalEl.addEventListener("hidden.bs.modal", () => {
+        resetExpenseModal("Add Expense", "Add");
+    });
+
+    // --- Initial data fetches ---
+    loadExpenses();
     fetchAndRenderDashboardBudget();
 
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') fetchAndRenderDashboardBudget();
+    // --- Refresh budget when tab regains focus ---
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            fetchAndRenderDashboardBudget();
+        }
     });
-});
+}); 
