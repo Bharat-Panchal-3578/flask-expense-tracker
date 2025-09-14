@@ -116,6 +116,7 @@ def compute_per_category(budget):
             percent_used = (spent/planned) * Decimal("100")
         percent_used = percent_used.quantize(Decimal("0.01"))
         results.append({
+            "id":c.id,
             "category": cat_name,
             "planned":planned,
             "spent":spent,

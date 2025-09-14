@@ -7,7 +7,7 @@
         <a href="/dashboard" class="btn btn-sm btn-outline-secondary">Back to Dashboard</a>
     </div>
 
-    <!-- Create Plan (collapsed for now) -->
+    <!-- Create Plan-->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>Create Budget Plan</span>
@@ -53,96 +53,25 @@
     <div class="card shadow-sm mb-4">
         <!-- Header -->
         <div class="card-header">
-            <div id="activePlanHeader" class="mb-3">
-                <div class="d-flex flex-wrap justify-content-between align-items-center">
-                    <div>
-                        <div class="fw-semibold">September Monthly Plan</div>
-                        <div class="small text-muted">2025-09-01 — 2025-09-30</div>
-                    </div>
-                    <ul class="list-unstyled mb-0 small text-end">
-                        <li>Planned: <strong>₹50,000</strong></li>
-                        <li>Spent: <strong>₹32,500</strong></li>
-                        <li>Remaining: <strong>₹17,500</strong></li>
-                    </ul>
-                </div>
-            </div>
+            <div id="activePlanHeader" class="mb-3"></div>
         </div>
 
         <div class="card-body">
             <!-- Meter / Overall Progress -->
-            <div id="activePlanMeter" class="mb-4">
-                <div class="progress" style="height: 10px;">
-                    <div class="progress-bar bg-success" style="width: 65%;"></div>
-                </div>
-                <div class="small text-muted mt-1">65% used</div>
-            </div>
+            <div id="activePlanMeter" class="mb-4"></div>
             <hr>
+
             <!-- Categories Section -->
-            <div id="activePlanCategories" class="mb-4">
-                <div class="fw-semibold mb-2">Categories</div>
-
-                <!-- Category Item -->
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <span>Food</span>
-                        <span class="text-muted">Planned: ₹5,000</span>
-                    </div>
-                    <div class="d-flex justify-content-between small text-muted">
-                        <span>Spent: ₹3,500</span>
-                        <span>Remaining: ₹1,500</span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-success" style="width: 70%;"></div>
-                    </div>
-                </div>
-
-                <!-- Category Item -->
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <span>Transport</span>
-                        <span class="text-muted">Planned: ₹2,000</span>
-                    </div>
-                    <div class="d-flex justify-content-between small text-muted">
-                        <span>Spent: ₹1,200</span>
-                        <span>Remaining: ₹800</span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-warning" style="width: 60%;"></div>
-                    </div>
-                </div>
-            </div>
+            <div id="activePlanCategories" class="mb-4"></div>
             <hr>
+
             <!-- Unplanned Categories (with progress bars) -->
-            <div id="activePlanUnplanned" class="mb-4">
-                <div class="fw-semibold mb-2">Unplanned Categories</div>
-
-                <!-- Unplanned Item -->
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <span>Miscellaneous</span>
-                        <span class="text-muted">Spent: ₹1,000</span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-info" style="width: 20%;"></div>
-                    </div>
-                </div>
-
-                <!-- Unplanned Item -->
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <span>Snacks</span>
-                        <span class="text-muted">Spent: ₹500</span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-info" style="width: 10%;"></div>
-                    </div>
-                </div>
-            </div>
+            <div id="activePlanUnplanned" class="mb-4"></div>
 
             <!-- Buttons -->
             <div class="d-flex justify-content-end gap-2">
                 <button id="addBudgetExpenseBtn" class="btn btn-sm btn-primary">Add Budget Expense</button>
-                <button id="editPlanBtn" class="btn btn-sm btn-outline-secondary">Edit Plan</button>
+                <button id="editPlanBtn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i> Edit Plan</button>
             </div>
         </div>
     </div>
@@ -152,52 +81,7 @@
         <div class="card-header">
             <h6 class="mb-0">Future Budget Plans</h6>
         </div>
-        <div class="card-body">
-
-            <!-- Example future plan -->
-            <div class="border rounded p-3 mb-3">
-                <div class="fw-semibold">October Monthly Budget</div>
-                <div class="small text-muted mb-3">2025-10-01 — 2025-10-30</div>
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between">
-                        <strong>Total Planned:</strong>
-                        <strong>₹28,000</strong>
-                    </div>
-                </div>
-                <hr>
-                <!-- Categories (only planned limits shown) -->
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between">
-                        <span>Food</span>
-                        <span class="fw-semibold">₹10,000</span>
-                    </div>
-                </div>
-
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between">
-                        <span>Rent</span>
-                        <span class="fw-semibold">₹10,000</span>
-                    </div>
-                </div>
-
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between">
-                        <span>Transport</span>
-                        <span class="fw-semibold">₹5,000</span>
-                    </div>
-                </div>
-
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between">
-                        <span>Entertainment</span>
-                        <span class="fw-semibold">₹3,000</span>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="text-muted small fst-italic">(More upcoming plans will appear here)</div>
-        </div>
+        <div class="card-body" id="futurePlansList"></div>
     </div>
 
     <!-- Past Budget Plans -->
@@ -205,164 +89,63 @@
         <div class="card-header">
             <h6 class="mb-0">Past Budget Plans</h6>
         </div>
-        <div class="card-body">
-
-            <!-- August Monthly Budget -->
-            <div class="border rounded p-2 mb-3">
-                <div class="fw-semibold">August Monthly Budget</div>
-                <div class="small text-muted">2025-08-01 — 2025-08-31</div>
-                <div class="small mb-2">Planned: <strong>₹30,000</strong> | Spent: <strong>₹32,500</strong></div>
-
-                <!-- Categories -->
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <span>Food</span>
-                        <span class="text-muted">Planned: ₹12,000</span>
-                    </div>
-                    <div class="d-flex justify-content-between small text-muted">
-                        <span>Spent: ₹13,500</span>
-                        <span>Remaining: -₹1,500</span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-danger" style="width: 113%;"></div>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <span>Rent</span>
-                        <span class="text-muted">Planned: ₹10,000</span>
-                    </div>
-                    <div class="d-flex justify-content-between small text-muted">
-                        <span>Spent: ₹10,000</span>
-                        <span>Remaining: ₹0</span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-success" style="width: 100%;"></div>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <span>Transport</span>
-                        <span class="text-muted">Planned: ₹5,000</span>
-                    </div>
-                    <div class="d-flex justify-content-between small text-muted">
-                        <span>Spent: ₹6,000</span>
-                        <span>Remaining: -₹1,000</span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-warning" style="width: 120%;"></div>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <span>Entertainment</span>
-                        <span class="text-muted">Planned: ₹3,000</span>
-                    </div>
-                    <div class="d-flex justify-content-between small text-muted">
-                        <span>Spent: ₹3,000</span>
-                        <span>Remaining: ₹0</span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-success" style="width: 100%;"></div>
-                    </div>
-                </div>
-                
-                <hr>
-                <!-- Overall Budget Progress -->
-                 <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <span>Overall Budget Progress</span>
-                        <span class="text-muted">Planned: ₹32,000</span>
-                    </div>
-                    <div class="d-flex justify-content-between small text-muted">
-                        <span>Spent: ₹32,500</span>
-                        <span>Remaining: -₹500</span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-danger" style="width: 100%"></div>
-                    </div>
-                </div>
-                <div class="small mt-1">Status: <span class="badge bg-danger">Over Budget</span></div>
-            </div>
-
-            <div class="text-muted small fst-italic">(Older plans and analysis will appear here)</div>
-        </div>
+        <div class="card-body" id="pastPlansList"></div>
     </div>
 
     <!-- Budget Expense Log -->
     <div class="container my-4">
-    <h3>Budget Expense Log</h3>
-    <div id="budgetExpenseLog" class="row g-3">
-        <!-- Example category card -->
-        <div class="col-12 col-md-6 col-lg-4">
-        <div class="card h-100 shadow-sm">
-            <div class="card-header d-flex justify-content-between align-items-center">
-            <div>
-                <div class="fw-semibold">Groceries</div>
-                <div class="small text-muted">Total spent: <strong>₹4,200</strong></div>
-            </div>
-            </div>
-            <div class="card-body p-0">
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex justify-content-between align-items-start">
-                <div class="me-3">
-                    <div class="fw-medium">Vegetables & Fruits</div>
-                    <div class="small text-muted">2025-09-01</div>
-                </div>
-                <div class="text-end">
-                    <div class="fw-semibold">₹1,200</div>
-                    <div class="mt-1 d-flex gap-2 justify-content-end">
-                    <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1">
-                        <i class="bi bi-pencil"></i> Edit
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1">
-                        <i class="bi bi-trash"></i> Delete
-                    </button>
-                    </div>
-                </div>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-start">
-                <div class="me-3">
-                    <div class="fw-medium">Monthly essentials</div>
-                    <div class="small text-muted">2025-09-03</div>
-                </div>
-                <div class="text-end">
-                    <div class="fw-semibold">₹3,000</div>
-                    <div class="mt-1 d-flex gap-2 justify-content-end">
-                    <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1">
-                        <i class="bi bi-pencil"></i> Edit
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1">
-                        <i class="bi bi-trash"></i> Delete
-                    </button>
-                    </div>
-                </div>
-                </li>
-            </ul>
-            </div>
-        </div>
-        </div>
-
-        <!-- Repeat for other categories... -->
-    </div>
+        <h3>Budget Expense Log</h3>
+        <div id="budgetExpenseLog" class="row g-3"></div>
     </div>
 
 </div>
 
-<!-- Budget Expense Modal (budget-specific logger) -->
+<!-- Category Edit Modal -->
+<div id="categoryEditModal" class="modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="categoryEditForm" autocomplete="off">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="budget_id" />
+                    <input type="hidden" name="category_id" />
+
+                    <div class="mb-2">
+                        <label class="form-label small">Category Name</label>
+                        <input type="text" name="category_name" class="form-control" required />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small">Limit</label>
+                        <input type="number" step="0.01" name="category_limit" class="form-control" required />
+                    </div>
+
+                    <div id="categoryEditError" class="text-danger small mt-2" role="alert" aria-live="polite"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Budget Expense Modal (used for both Add & Edit) -->
 <div id="budgetExpenseModal" class="modal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <form id="budgetExpenseForm" autocomplete="off">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add Budget Expense</h5>
+                    <h5 class="modal-title" id="budgetExpenseModalTitle">Add Budget Expense</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="budget_id" />
+                    <input type="hidden" name="expense_id" /> <!-- used only for edit -->
                     <input type="date" name="date" class="form-control mb-2" required>
                     <input type="text" name="category" class="form-control mb-2" placeholder="Category" required>
                     <input type="text" name="description" class="form-control mb-2" placeholder="Description">
@@ -370,17 +153,66 @@
                     <div id="budgetExpenseError" class="text-danger small mt-2" role="alert" aria-live="polite"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Add</button>
+                    <button type="submit" id="budgetExpenseSubmitBtn" class="btn btn-primary">Add</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Edit Plan Modal -->
+<div id="editPlanModal" class="modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editPlanForm" autocomplete="off">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Budget Plan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="budget_id" />
+
+                    <div class="mb-2">
+                    <label class="form-label small">Plan Name</label>
+                    <input type="text" name="name" class="form-control" required />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small">Period Type</label>
+                        <select name="period_type" class="form-select" required>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="yearly">Yearly</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small">Start Date</label>
+                        <input type="date" name="start_date" class="form-control" required />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small">End Date</label>
+                        <input type="date" name="end_date" class="form-control" required />
+                    </div>
+
+                    <div id="editPlanError" class="text-danger small mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
     <script src="{{ url_for('static',filename='api.js') }}"></script>
-    <!-- <script src="{{ url_for('static',filename='budgets.js') }}"></script> -->
+    <script src="{{ url_for('static',filename='budgets.js') }}"></script>
 {% endblock %}

@@ -263,6 +263,7 @@ class BudgetListResource(Resource):
                 },
                 "per_category": [
                     {
+                        "id":c["id"],
                         "category": c["category"],
                         "planned": float(c["planned"]),
                         "spent": float(c["spent"]),
@@ -339,6 +340,9 @@ class BudgetListResource(Resource):
             start_date=start_date,
             end_date=end_date
         )
+
+        db.session.add(budget)
+        db.session.commit()
 
         response_data = {
             "id":budget.id,
@@ -519,6 +523,7 @@ class CurrentBudgetResource(Resource):
             },
             "per_category": [
                 {
+                    "id":c["id"],
                     "category": c["category"],
                     "planned": float(c["planned"]),
                     "spent": float(c["spent"]),
