@@ -1,3 +1,14 @@
+// Audit Current File – find duplicates, unused functions, repetitive listeners.
+// Group DOM Selectors – cache at the top instead of re-querying.
+// Create Utility Functions – extract patterns like API calls, error handling, response parsing.
+// Unify API Calls – one generic apiRequest() handling all verbs.
+// Standardize Modals – reuse Add/Edit modal with dynamic title & button.
+// Simplify Event Binding – fewer duplicate listeners, use delegation where needed.
+// Remove Debugging Code – delete console.log & temp code.
+// Consolidate Budget & Expense Functions – merge similar loaders into param-based ones.
+// Error Handling DRY – single helper for error messages.
+// Final Pass & Optimize – reduce redundancy, check line count target (~700–750, max 800).
+
 function escapeHtml(s) {
     if (s === null || s === undefined) return '';
     return String(s)
