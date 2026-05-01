@@ -17,7 +17,7 @@ class User(db.Model):
 
     def set_password(self, password):
         """Hashes the password before storing."""
-        return generate_password_hash(password)
+        self.password = generate_password_hash(password)
     
     def check_password(self, password):
         """Verifies the password against the stored hash."""
