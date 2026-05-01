@@ -25,13 +25,13 @@ def create_app(config_name: str = "default") -> Flask:
     from app.models.budget import Budget, BudgetCategory, BudgetExpense
 
     # Register blueprints
-    # from app.users import users_bp
-    # from app.expenses import expenses_bp
-    # from app.budgets import budgets_bp
+    from app.users import users_bp
+    from app.expenses import expenses_bp
+    from app.budgets import budgets_bp
 
-    # app.register_blueprint(users_bp, url_prefix="/api/users")
-    # app.register_blueprint(expenses_bp, url_prefix="/api/expenses")
-    # app.register_blueprint(budgets_bp, url_prefix="/api/budgets")
+    app.register_blueprint(users_bp, url_prefix="/api/users")
+    app.register_blueprint(expenses_bp, url_prefix="/api/expenses")
+    app.register_blueprint(budgets_bp, url_prefix="/api/budgets")
 
     logger = logging.getLogger("api")
     logger.info("App created in '%s' environment", config_name)
