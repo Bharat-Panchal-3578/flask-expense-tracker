@@ -6,7 +6,7 @@ class User(db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), nullable=False)
+    username = db.Column(db.String(80), nullable=False, unique=True)
     email = db.Column(db.String(120), nullable=False, unique=True)
     password = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
@@ -22,6 +22,14 @@ class User(db.Model):
     def check_password(self, password):
         """Verifies the password against the stored hash."""
         return check_password_hash(self.password, password)
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "email": self.email,
+            "created_at": self.created_at.isoformat(),
+        }
 
     def __repr__(self):
         return f"<User id={self.id} username={self.username!r} email={self.email!r}>"

@@ -1,4 +1,4 @@
-from flask import jsonify, Response
+from flask import Response
 from typing import Any, Optional
 
 def success_response(data:Any = None, message: Optional[str] = None, status_code:int = 200) -> tuple[Response, int]:
@@ -10,7 +10,7 @@ def success_response(data:Any = None, message: Optional[str] = None, status_code
     if data is not None:
         payload["data"] = data
 
-    return jsonify(payload), status_code
+    return payload, status_code
 
 def error_response(message:str, status_code: int = 400, errors:Any = None) -> tuple[Response, int]:
     payload = {
@@ -21,4 +21,4 @@ def error_response(message:str, status_code: int = 400, errors:Any = None) -> tu
     if errors:
         payload["errors"] = errors
 
-    return jsonify(payload), status_code
+    return payload, status_code
