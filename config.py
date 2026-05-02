@@ -103,6 +103,7 @@ class Config:
     JWT_COOKIE_SECURE = False
     JWT_REFRESH_COOKIE_PATH = "/"
     JWT_COOKIE_CSRF_PROTECT = False
+    PROPAGATE_EXCEPTIONS = True
 
     @staticmethod
     def init_logging():
